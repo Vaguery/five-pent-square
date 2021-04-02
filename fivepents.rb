@@ -25,9 +25,25 @@ class Omino
   def sorted_cells(cells)
     cells.to_a.sort
   end
+
+  def draw_string(embedding_space)
+    i_range = embedding_space.collect {|c| c[0]}.uniq.sort
+    j_range = embedding_space.collect {|c| c[1]}.uniq.sort
+
+    flat_cells = @cells.to_a
+    pic = ""
+    j_range.each do |j|
+      i_range.each do |i|
+        pic += flat_cells.include?([i,j]) ? @label.to_s : "."
+      end
+      pic += "\n"
+    end
+    return pic
+  end
 end
 
-t = Omino.new(:A,[[1,1],[1,2],[0,0]])
+t = Omino.new(:B,[[1,1],[1,2],[0,0],[1,0]])
 puts t.neighbors_of_cell([0,0],space).inspect
 tn = t.feasible_neighbors(space)
 puts tn.to_a.sort.inspect
+puts t.draw_string(space)
