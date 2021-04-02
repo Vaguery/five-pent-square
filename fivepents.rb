@@ -22,6 +22,12 @@ class Omino
     @cells.inject(Set.new()) {|s,c| s | Omino.neighbors_of_cell(c,possible_set)}
   end
 
+  def feasible_neighbors_of_cells(cells,possible_set)
+    cells.inject(Set.new()) do |nbs,c|
+      nbs | Omino.neighbors_of_cell(c,possible_set)
+    end
+  end
+
   def sorted_cells(cells)
     cells.to_a.sort
   end
@@ -51,25 +57,59 @@ class Omino
   end
 
   def contiguous?(possible_set)
-    internal_neighbors = @cells.collect do |c|
-      @cells & Omino.neighbors_of_cell(c,possible_set) # intersection
+    growing = @cells.take(1)
+    unclaimed = @cells.drop(1)
+    next_layer = feasible_neighbors_of_cells(growing,possible_set)
+    new_neighbors = next_layer & unclaimed
+
+    until new_neighbors.empty? || unclaimed.empty?
+      growing = Set.new(growing) | new_neighbors
+      unclaimed = Set.new(unclaimed) - new_neighbors
+      next_layer = feasible_neighbors_of_cells(growing,possible_set)
+      new_neighbors = next_layer & unclaimed
     end
-    return internal_neighbors.inject(true) {|answer,n| answer && !n.empty?}
+
+    return unclaimed.empty?
   end
 
   def touching?(other_omino,possible_set)
     mine = self.feasible_neighbors(possible_set)
     !(mine & other_omino.cells).empty?
   end
+
+  def merge_cells(other_omino)
+    self.cells | other_omino.cells
+  end
+
+  def self.all_feasible_splits(cells,size1,space)
+    parts = cells.to_a.sort
+    subdivisions = Set.new()
+    parts.combination(size1).each do |combo|
+      x1 = Omino.new(:x1,combo)
+      x2 = Omino.new(:x2,parts - combo)
+      if x1.contiguous?(space)
+        if x2.contiguous?(space)
+          subdivisions.add([x1.cells,x2.cells])
+        end
+      end
+    end
+    return subdivisions
+  end
 end
 
-a = Omino.new(:A,[[4,4],[4,3],[4,2]])
-b = Omino.new(:B,[[1,1],[1,2],[0,0],[1,0]])
-c = Omino.new(:C,[[2,0],[3,0]])
-x = Omino.new(:X,[[1,4],[4,1]])
-puts Omino.neighbors_of_cell([0,0],space).inspect
-tn = b.feasible_neighbors(space)
-puts tn.to_a.sort.inspect
-puts Omino.draw_cells([a,b,c,x],space)
+starting_ominoes = [
+  Omino.new(:A,[0,1,2,3,4].product([0])),
+  Omino.new(:B,[0,1,2,3,4].product([1])),
+  Omino.new(:C,[0,1,2,3,4].product([2])),
+  Omino.new(:D,[0,1,2,3,4].product([3])),
+  Omino.new(:E,[0,1,2,3,4].product([4]))
+]
 
-puts x.touching?(x,space)
+puts Omino.draw_cells(starting_ominoes,space)
+ab = starting_ominoes[0].merge_cells(starting_ominoes[1])
+# puts ab.inspect
+newAB =  Omino.all_feasible_splits(ab,5,space)
+# draw them all
+newAB.each do |d|
+  puts "\n\n" + Omino.draw_cells([Omino.new(:a,d[0]),Omino.new(:b,d[1])]+starting_ominoes[2..-1],space)
+end
