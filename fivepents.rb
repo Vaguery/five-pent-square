@@ -26,15 +26,24 @@ class Omino
     cells.to_a.sort
   end
 
-  def draw_string(embedding_space)
-    i_range = embedding_space.collect {|c| c[0]}.uniq.sort
-    j_range = embedding_space.collect {|c| c[1]}.uniq.sort
+  def self.omino_labeling_hash(ominos)
+    labeling = {}
+    ominos.each do |o|
+      o.cells.each {|c| labeling[c] = o.label.to_s}
+    end
+    return labeling
+  end
 
-    flat_cells = @cells.to_a
+  def self.draw_cells(ominos,embedding_space)
+    i_lo,i_hi = embedding_space.collect {|c| c[0]}.minmax
+    j_lo,j_hi = embedding_space.collect {|c| c[1]}.minmax
+
+    labels = self.omino_labeling_hash(ominos)
+
     pic = ""
-    j_range.each do |j|
-      i_range.each do |i|
-        pic += flat_cells.include?([i,j]) ? @label.to_s : "."
+    (j_lo..j_hi).each do |j|
+      (i_lo..i_hi).each do |i|
+        pic += labels[[i,j]] || "."
       end
       pic += "\n"
     end
@@ -42,8 +51,9 @@ class Omino
   end
 end
 
+s = Omino.new(:A,[[4,4],[4,3],[4,2]])
 t = Omino.new(:B,[[1,1],[1,2],[0,0],[1,0]])
 puts t.neighbors_of_cell([0,0],space).inspect
 tn = t.feasible_neighbors(space)
 puts tn.to_a.sort.inspect
-puts t.draw_string(space)
+puts Omino.draw_cells([t,s],space)
