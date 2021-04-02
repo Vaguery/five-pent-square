@@ -4,6 +4,11 @@ space = Set.new([0,1,2,3,4].product([0,1,2,3,4]))
 
 names = [:A,:B,:C,:D,:E]
 
+def visual_sort(cells)
+  cells.sort_by {|c| c.reverse}
+end
+
+
 class Omino
   attr_accessor :label,:cells
 
@@ -95,6 +100,25 @@ class Omino
     end
     return subdivisions
   end
+
+  def self.canonical_labeling(ominoes,space)
+    labels = (:A..:Z).take(ominoes.length)
+    remaining_points = visual_sort(space)
+    result = []
+
+    until remaining_points.empty? || ominoes.empty?
+      probe = remaining_points.first
+      hit = ominoes.select {|e| e.cells.include?(probe)}[0]
+      first = Omino.new(labels[0],hit.cells)
+      result << first
+      labels = labels.drop(1)
+      ominoes = ominoes - [hit]
+      remaining_points = visual_sort(remaining_points - hit.cells.to_a)
+    end
+
+    return result
+  end
+
 end
 
 starting_ominoes = [
@@ -105,11 +129,18 @@ starting_ominoes = [
   Omino.new(:E,[0,1,2,3,4].product([4]))
 ]
 
-puts Omino.draw_cells(starting_ominoes,space)
+# puts Omino.draw_cells(starting_ominoes,space)
 ab = starting_ominoes[0].merge_cells(starting_ominoes[1])
 # puts ab.inspect
 newAB =  Omino.all_feasible_splits(ab,5,space)
 # draw them all
-newAB.each do |d|
-  puts "\n\n" + Omino.draw_cells([Omino.new(:a,d[0]),Omino.new(:b,d[1])]+starting_ominoes[2..-1],space)
+variants = newAB.collect do |d|
+  Omino.draw_cells(
+    Omino.canonical_labeling(
+      [Omino.new(:a,d[0]),
+      Omino.new(:b,d[1])]+starting_ominoes[2..-1],
+      space),
+    space
+  )
 end
+puts variants.uniq.join("\n")
